@@ -67,3 +67,8 @@ servicesarray=( apache2 mysql postgresql )
 # Path or alias of the browser you want to open the results with.
 # This setting is only useful when running compare.sh script.
 browser="firefox"
+
+# PHP binary
+# Allows you to overwrite the default PHP command, useful if you have
+# multiple PHP versions in the same system or if it's path is not in $PATH.
+phpbin="php"
