@@ -192,13 +192,33 @@ class test_plan_run {
     }
 
     /**
-     * Returns an array to pass to generate the chart from it.
+     * Returns an array with the run data grouped by var and step and the raw results.
      *
-     * @param string $var
-     * @return array
+     * @param string $var The var to return or false to get all vars.
+     * @param string $dataset The required dataset, false to get the both of them. 'totalsums' or 'rawtotals'
+     * @return array Depending on the provided params
      */
-    public function get_run_dataset($var) {
-        return array($this->totalsums[$var], $this->rawtotals[$var]);
+    public function get_run_dataset($var = false, $dataset = false) {
+
+        // Return all.
+        if ($var === false) {
+            $totalsums = & $this->totalsums;
+            $rawtotals = & $this->rawtotals;
+        } else {
+            $totalsums = & $this->totalsums[$var];
+            $rawtotals = & $this->rawtotals[$var];
+        }
+
+        // Returning just one dataset if it was specified.
+        if ($dataset != false) {
+            if (!isset($$dataset)) {
+                die('The "' . $dataset . '" provided dataset does not exist');
+            }
+
+            return $$dataset;
+        }
+
+        return array($totalsums, $rawtotals);
     }
 
     /**

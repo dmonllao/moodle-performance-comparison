@@ -11,6 +11,11 @@
 class report {
 
     /**
+     * @var Until where we can skip a false positive if it goes from or to 0.
+     */
+    const FALSE_POSITIVE_SCALAR_THRESHOLD = 2;
+
+    /**
      * @var The path relative to the project root.
      */
     const RUNS_RELATIVE_PATH = 'runs/';
@@ -80,12 +85,12 @@ class report {
     }
 
     /**
-     * Generates the report
+     * Gets the runs data
      *
      * @param array $timestamps We will get the runs files from their timestamp (is part of the name).
-     * @return void
+     * @return bool Whether runs are comparable or not.
      */
-    public function make(array $timestamps) {
+    public function parse_runs(array $timestamps) {
 
         krsort($timestamps);
 
@@ -103,6 +108,23 @@ class report {
 
         // Stop when runs are not comparables between them.
         if (!$this->check_runs_are_comparable()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Generates the report
+     *
+     * @param array $timestamps We will get the runs files from their timestamp (is part of the name).
+     * @return bool False if problems were found.
+     */
+    public function make(array $timestamps) {
+
+        // Gets the runs data and checks that it is comparable.
+        if (!$this->parse_runs($timestamps)) {
+            // No need to parse anything if it is not comparable.
             return false;
         }
 
@@ -165,6 +187,8 @@ class report {
 
             $this->create_charts($var, $steporienteddataset, $runorienteddataset);
         }
+
+        return true;
     }
 
     /**
@@ -226,6 +250,106 @@ class report {
         krsort($runfiles);
 
         return array($runfiles, $runsvalues);
+    }
+
+    /**
+     * Gets the big changes comparing the first run against the other runs results
+     *
+     * @param array $thresholds Format: array('bystep' => array('dbreads' => 1, 'dbwrites' => ...), 'total' => array('dbreads' => 2, 'dbwrites'...))
+     * @return array List of big differences between runs.
+     */
+    public function get_big_differences(array $thresholds = array()) {
+
+        // Contains the big differences.
+        $changes = array();
+
+        // We get the first run as a base to compare with the other runs
+        $baserun = array_shift($this->runs);
+        $basetocompare = $baserun->get_run_dataset(false, 'totalsums');
+
+        // Comparing each other run against the base one.
+        foreach ($this->runs as $run) {
+
+            $varaggregates = array_fill_keys(test_plan_run::$runvars, 0);
+
+            $runtotals = $run->get_run_dataset(false, 'totalsums');
+            foreach ($runtotals as $var => $steps) {
+
+                // Check differences between specific steps.
+                foreach ($steps as $stepname => $value) {
+
+                    if ($changed = $this->get_value_changes($baserun, $run, $basetocompare[$var][$stepname], $value, $thresholds['bystep'][$var])) {
+                        $changes[$var][$stepname] = $changed;
+                    }
+
+                    // Add it to the global $var sum
+                    $varaggregates[$var] = $varaggregates[$var] + $value;
+                }
+
+                // Has the performance changed in general.
+                if ($changed = $this->get_value_changes($baserun, $run, array_sum($basetocompare[$var]), $varaggregates[$var], $thresholds['total'][$var])) {
+                    // We unset all the steps to avoid showing too much info with a general regression / improvement is ok.
+                    $changes[$var] = array();
+                    $changes[$var]['All steps data combined'] = $changed;
+                }
+            }
+        }
+
+        return $changes;
+    }
+
+    /**
+     * Describes the changes between two values using the provided threshold
+     *
+     * @param test_plan_run $baserun
+     * @param test_plan_run $run
+     * @param float $from
+     * @param float $to
+     * @param float $threshold
+     * @return bool|string The string describing the changes or false if there are no changes
+     */
+    protected function get_value_changes($baserun, $run, $from, $to, $threshold) {
+
+        $runsinfostr = 'between ' . $baserun->get_run_info_string() . ' and ' . $run->get_run_info_string();
+
+        // Different treatment for near-zero values.
+        // If there are real problems the sum of all the steps will spot them.
+        if ($to == 0 && $from == 0) {
+            // Skip it.
+            return false;
+        } else if ($to == 0) {
+            if ($to > self::FALSE_POSITIVE_SCALAR_THRESHOLD) {
+                // It is a real improvement if goes to 0.
+                return 'Performance improved, from ' . $from . ' to 0 ' . $runsinfostr;
+            } else {
+                // Ignore the change.
+                return false;
+            }
+        } else if ($from == 0) {
+            if ($from > self::FALSE_POSITIVE_SCALAR_THRESHOLD) {
+                // It is a regression if it was 0 and now is too much.
+                return 'Performance regression, from 0 to ' . $from . ' ' . $runsinfostr;
+            } else {
+                // Ignore the change.
+                return false;
+            }
+        }
+
+        $difference = ($to * 100) / $from;
+
+        if ($difference > 100) {
+            $change = round($difference - 100, 2);
+        } else {
+            $change = round(100 - $difference, 2);
+        }
+
+        if (($difference - $threshold) > 100) {
+            return 'Performance regression,  decreases a ' . $change . '% ' . $runsinfostr;
+        } else if (($difference + $threshold) < 100) {
+            return 'Performance improved, a ' . $change . '% ' . $runsinfostr;
+        }
+
+        return false;
     }
 
     /**
@@ -319,7 +443,7 @@ class report {
 
         $chartid = $var . '_' . $chartdeclaration['id'];
 
-        // TODO: Merge with the declared ones.
+        // TODO: Merge with the declared ones to allow specific behaviours.
         $options = array('title' => $var);
 
         $chart = new google_chart($chartid, $dataset, $chartdeclaration['class'], $options);
