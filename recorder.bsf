@@ -125,6 +125,24 @@ MoodleResult(JMeterContext ctx) {
        return php;
     }
 
+    runInfoToPHP() {
+        String php = "<?php\n";
+        php += "$host = '"+vars.get("host")+"';\n";
+        php += "$sitepath = '"+vars.get("sitepath")+"';\n";
+        php += "$group = '"+EscapeQuotes(props.get("group"))+"';\n";
+        php += "$rundesc = '"+EscapeQuotes(props.get("desc"))+"';\n";
+        php += "$users = '"+vars.get("users")+"';\n";
+        php += "$loopcount = '"+vars.get("loops")+"';\n";
+        php += "$rampup = '"+vars.get("rampup")+"';\n";
+        php += "$throughput = '"+vars.get("throughput")+"';\n";
+        php += "$size = '"+vars.get("size")+"';\n";
+        php += "$baseversion = '"+vars.get("moodleversion")+"';\n";
+        php += "$siteversion = '"+EscapeQuotes(props.get("siteversion"))+"';\n";
+        php += "$sitebranch = '"+EscapeQuotes(props.get("sitebranch"))+"';\n";
+        php += "$sitecommit = '"+EscapeQuotes(props.get("sitecommit"))+"';\n";
+        return php;
+    }
+
     return this;
 }
 
@@ -134,42 +152,26 @@ EscapeQuotes(String text) {
 
 Runnable mr = MoodleResult(ctx);
 
-// Create the file.
+// Create the file if it is not already created.
+String runinfo = mr.runInfoToPHP();
 String filenamepath = "runs/" + vars.get("runtimestamp") + ".php";
 File f = new File(filenamepath);
-if (!f.exists()) {
-    FileWriter fstream = new FileWriter(filenamepath, true);
-    BufferedWriter out = new BufferedWriter(fstream);
-    out.write("");
-    out.close();
+if (!f.exists() && JMeterUtils.getProperty("headerprinted") == null) {
+
+    // Print the table headers only the first time.
+    JMeterUtils.setProperty("headerprinted", "1");
 
     FileWriter fstream = new FileWriter(filenamepath, true);
     BufferedWriter out = new BufferedWriter(fstream);
-    out.write("<?php\n");
-    out.write("$host = '"+vars.get("host")+"';\n");
-    out.write("$sitepath = '"+vars.get("sitepath")+"';\n");
-    out.write("$group = '"+EscapeQuotes(props.get("group"))+"';\n");
-    out.write("$rundesc = '"+EscapeQuotes(props.get("desc"))+"';\n");
-    out.write("$users = '"+vars.get("users")+"';\n");
-    out.write("$loopcount = '"+vars.get("loops")+"';\n");
-    out.write("$rampup = '"+vars.get("rampup")+"';\n");
-    out.write("$throughput = '"+vars.get("throughput")+"';\n");
-    out.write("$size = '"+vars.get("size")+"';\n");
-    out.write("$baseversion = '"+vars.get("moodleversion")+"';\n");
-    out.write("$siteversion = '"+EscapeQuotes(props.get("siteversion"))+"';\n");
-    out.write("$sitebranch = '"+EscapeQuotes(props.get("sitebranch"))+"';\n");
-    out.write("$sitecommit = '"+EscapeQuotes(props.get("sitecommit"))+"';\n");
+    out.write(runinfo);
     out.close();
+
+    print(mr.headerToString());
 }
 
 FileWriter fstream = new FileWriter(filenamepath, true);
 BufferedWriter out = new BufferedWriter(fstream);
 out.write(mr.toPHP());
 out.close();
-
-if (JMeterUtils.getProperty("headerprinted") == null) {
-    JMeterUtils.setProperty("headerprinted", "1");
-    print(mr.headerToString());
-}
 
 print(mr.toString());
