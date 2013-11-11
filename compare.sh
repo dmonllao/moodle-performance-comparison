@@ -31,7 +31,7 @@ timestart=`date +%s`
 groupname="compare_"`date '+%Y%m%d%H%M'`
 
 # Hardcoding S as the size, with 5 loops is enough to have consistent results.
-./before_run_setup.sh S
+./before_run_setup.sh $defaultcomparesize
 beforeexitcode=$?
 if [ "$beforeexitcode" -ne "0" ]; then
     echo "Error: Before run setup didn't finish as expected"
