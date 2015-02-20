@@ -13,14 +13,14 @@ MoodleResult(JMeterContext ctx) {
     String html = result.getResponseDataAsString();
 
     String dbreads = "0";
-    Pattern pdbreads = Pattern.compile(".*?DB reads/writes: (\\d+)/\\d+.*", Pattern.UNIX_LINES | Pattern.DOTALL);
+    Pattern pdbreads = Pattern.compile(".*?db reads/writes: (\\d+)/\\d+.*", Pattern.UNIX_LINES | Pattern.DOTALL);
     Matcher mdbreads = pdbreads.matcher(html);
     if (mdbreads.matches()) {
         dbreads = mdbreads.group(1);
     }
 
     String dbwritesstr = "0";
-    Pattern pdbwrites = Pattern.compile(".*?DB reads/writes: \\d+/(\\d+).*", Pattern.UNIX_LINES | Pattern.DOTALL);
+    Pattern pdbwrites = Pattern.compile(".*?db reads/writes: \\d+/(\\d+).*", Pattern.UNIX_LINES | Pattern.DOTALL);
     Matcher mdbwrites = pdbwrites.matcher(html);
     if (mdbwrites.matches()) {
         dbwritesstr = mdbwrites.group(1);
@@ -29,7 +29,7 @@ MoodleResult(JMeterContext ctx) {
 
     // Adding logs if required.
     if (props.get("includelogs") != null) {
-        Pattern plogwrites = Pattern.compile(".*?Log DB writes (\\d+).*", Pattern.UNIX_LINES | Pattern.DOTALL);
+        Pattern plogwrites = Pattern.compile(".*?logwrites: (\\d+).*", Pattern.UNIX_LINES | Pattern.DOTALL);
         Matcher mlogwrites = plogwrites.matcher(html);
         if (mlogwrites.matches()) {
             dbwrites = dbwrites + Integer.parseInt(mlogwrites.group(1));
@@ -37,28 +37,28 @@ MoodleResult(JMeterContext ctx) {
     }
 
     String dbquerytime = "0";
-    Pattern pdbquerytime = Pattern.compile(".*?DB queries time: (\\d+(\\.\\d+)?) secs.*", Pattern.UNIX_LINES | Pattern.DOTALL);
+    Pattern pdbquerytime = Pattern.compile(".*?db queries time: (\\d+(\\.\\d+)?).*", Pattern.UNIX_LINES | Pattern.DOTALL);
     Matcher mdbquerytime = pdbquerytime.matcher(html);
     if (mdbquerytime.matches()) {
         dbquerytime = mdbquerytime.group(1);
     }
 
     String memoryused = "0";
-    Pattern pmemoryused = Pattern.compile(".*?RAM: (\\d+(\\.\\d+)?)MB.*", Pattern.UNIX_LINES | Pattern.DOTALL);
+    Pattern pmemoryused = Pattern.compile(".*?memory_total:.*B.*(\\d+(\\.\\d+)?)MB.*", Pattern.UNIX_LINES | Pattern.DOTALL);
     Matcher mmemoryused = pmemoryused.matcher(html);
     if (mmemoryused.matches()) {
         memoryused = mmemoryused.group(1);
     }
 
     String filesincluded = "0";
-    Pattern pfilesincluded = Pattern.compile(".*?Included (\\d+) files.*", Pattern.UNIX_LINES | Pattern.DOTALL);
+    Pattern pfilesincluded = Pattern.compile(".*?includecount: (\\d+).*", Pattern.UNIX_LINES | Pattern.DOTALL);
     Matcher mfilesincluded = pfilesincluded.matcher(html);
     if (mfilesincluded.matches()) {
         filesincluded = mfilesincluded.group(1);
     }
 
     String serverload = "0";
-    Pattern pserverload = Pattern.compile(".*?Load average: (\\d+(\\.\\d+)?).*", Pattern.UNIX_LINES | Pattern.DOTALL);
+    Pattern pserverload = Pattern.compile(".*?serverload: (\\d+(\\.\\d+)?).*", Pattern.UNIX_LINES | Pattern.DOTALL);
     Matcher mserverload = pserverload.matcher(html);
     if (mserverload.matches()) {
         serverload = mserverload.group(1);
@@ -72,7 +72,7 @@ MoodleResult(JMeterContext ctx) {
     }
 
     String timeused = "0";
-    Pattern ptimeused = Pattern.compile(".*?\"timeused\">(\\d+(\\.\\d+)?) secs.*", Pattern.UNIX_LINES | Pattern.DOTALL);
+    Pattern ptimeused = Pattern.compile(".*?\"time: (\\d+(\\.\\d+)?)s.*", Pattern.UNIX_LINES | Pattern.DOTALL);
     Matcher mtimeused = ptimeused.matcher(html);
     if (mtimeused.matches()) {
         timeused = mtimeused.group(1);
