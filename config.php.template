@@ -41,10 +41,6 @@ $CFG->dbsessions = false;
 
 if (!defined('CLI_SCRIPT')) {
     define('MDL_PERF_TEST', true);
-    define('MDL_PERF', true);
-    define('MDL_PERFDB', true);
-    define('MDL_PERFTOLOG', true);
-    define('MDL_PERFTOFOOT', true);
 }
 
 $CFG->directorypermissions = 0777;
